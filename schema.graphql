@@ -1,0 +1,23 @@
+type Person {
+    id: String!
+    name: String
+    lastName: String
+}
+type Query {
+    people: [Person!]!
+    getPerson(id: String, name: String): Person!
+
+    getPersonDynamoDb(id: String): Person!
+    peopleDynamodb: [Person!]!
+}
+type Mutation {
+	personCreate(name: String!, lastName: String!, id: String): [Person!]!
+    personDelete(id: String!): [Person!]!
+    personUpdate(id: String!, name: String, lastName: String): [Person!]!
+
+    personCreateDynamoDb(name: String!, lastName: String!): Person!
+}
+schema {
+    query: Query
+    mutation: Mutation
+}

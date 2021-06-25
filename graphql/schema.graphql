@@ -1,0 +1,11 @@
+type Person {
+    id: Int!
+    name: String
+    lastName: String
+}
+type Query {
+    persons: [Person]
+}
+schema {
+    query: Person
+}
