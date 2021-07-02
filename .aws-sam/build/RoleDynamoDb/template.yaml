@@ -1,0 +1,48 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'samtwo
+
+  Sample SAM Template for samtwo roles for dynamoDb
+
+  '
+Globals:
+  Function:
+    Timeout: 5
+Resources:
+  RoleDynamoDb:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: appsync.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Policies:
+      - PolicyName: allow-access-to-dynamodb-person-from-appsync
+        PolicyDocument:
+          Version: 2012-10-17
+          Statement:
+          - Effect: Allow
+            Action:
+            - dynamodb:*
+            Resource:
+            - Fn::Sub: arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/people
+  RoleDynamoDbArnSSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: RoleDynamoDbArnSSM
+      Value:
+        Fn::GetAtt:
+        - RoleDynamoDb
+        - Arn
+Outputs:
+  RoleDynamoDbArn:
+    Description: RoleDynamoDb Arn
+    Value:
+      Fn::GetAtt:
+      - RoleDynamoDb
+      - Arn

@@ -5,7 +5,7 @@ type Person {
 }
 type Query {
     people: [Person!]!
-    getPerson(id: String): Person!
+    getPerson(id: String, name: String): Person!
 
     getPersonDynamoDb(id: String): Person!
     peopleDynamodb: [Person!]!

@@ -3,7 +3,7 @@ Transform: AWS::Serverless-2016-10-31
 Description: >
   samtwo
   
-  Sample SAM Template for samtwo
+  Sample SAM Template for Sam-AppSync-GraphQL
 
 # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
@@ -11,256 +11,70 @@ Globals:
     Timeout: 5
 
 Resources:
-  HelloWorldFunction:
-    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+  LambdaHelloWorld:
+    Type: AWS::Serverless::Application
     Properties:
-      CodeUri: graphql/hello-world/
-      Handler: graphql/hello-world
-      Runtime: go1.x
-      Tracing: Active # https://docs.aws.amazon.com/lambda/latest/dg/lambda-x-ray.html
-      Events:
-        CatchAll:
-          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
-          Properties:
-            Path: /hello
-            Method: GET
-      Environment: # More info about Env Vars: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#environment-object
-        Variables:
-          PARAM1: VALUE
+      Location: resources/lambdas/lambda_hello_world.yaml
 
-  PerezFunction:
-    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+  LambdaPerson:
+    Type: AWS::Serverless::Application
     Properties:
-      CodeUri: graphql/person-get-all/
-      Handler: graphql/person-get-all
-      Runtime: go1.x
-      Tracing: Active # https://docs.aws.amazon.com/lambda/latest/dg/lambda-x-ray.html
+      Location: resources/lambdas/lambda_person.yaml
 
-  TablePeople:
-    Type: AWS::Serverless::SimpleTable
+  RoleLambdas:
+    Type: AWS::Serverless::Application
+    DependsOn: LambdaPerson
     Properties:
-      TableName: people
-      PrimaryKey:
-        Name: id
-        Type: String
-      ProvisionedThroughput:
-        ReadCapacityUnits: 5
-        WriteCapacityUnits: 5
+      Location: resources/roles/role_lambdas.yaml
 
-  Role: 
-    Type: AWS::IAM::Role
-    Properties: 
-      AssumeRolePolicyDocument: 
-        Version: 2012-10-17
-        Statement: 
-          - Effect: Allow
-            Principal:
-              Service: appsync.amazonaws.com
-            Action:
-              - sts:AssumeRole
-      Policies: 
-        - PolicyName: allow-access-to-lambda-from-appsync
-          PolicyDocument: 
-            Version: 2012-10-17
-            Statement: 
-              - Effect: Allow
-                Action: lambda:invokeFunction
-                Resource:
-                  - !GetAtt [ PerezFunction, Arn ]
-                  - !Join [ '', [ !GetAtt [ PerezFunction, Arn ], ':*' ] ]
-        - PolicyName: allow-access-to-dynamodb-from-appsync
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action:
-                  - dynamodb:*
-                Resource:
-                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TablePeople}
-
-  GraphQLApi:
-    Type: AWS::AppSync::GraphQLApi
+  RoleDynamoDb:
+    Type: AWS::Serverless::Application
     Properties:
-      Name: !Ref APIName
-      AuthenticationType: API_KEY
+      Location: resources/roles/role_DynamoDb.yaml
 
-  GraphQLApiSchema:
-    Type: AWS::AppSync::GraphQLSchema
+  DynamoDbTablePerson:
+    Type: AWS::Serverless::Application
     Properties:
-      ApiId: !GetAtt [GraphQLApi, ApiId]
-      DefinitionS3Location: schema.graphql
+      Location: resources/dynamodb/dynamo_table_people.yaml
 
-  AppSyncDataSource:
-    Type: AWS::AppSync::DataSource
+  AppSyncGraphQLApi:
+    Type: AWS::Serverless::Application
     Properties:
-      ApiId: !GetAtt [ GraphQLApi, ApiId ]
-      Name: source
-      Type: AWS_LAMBDA
-      LambdaConfig:
-        LambdaFunctionArn: !GetAtt [ PerezFunction, Arn ]
-      ServiceRoleArn: !GetAtt [ Role, Arn ]
+      Location: resources/appsync/grapghqlapi.yaml
 
-  AppSyncDataSourceDynamoDB:
-    Type: AWS::AppSync::DataSource
+  AppSyncGraphQLSchema:
+    Type: AWS::Serverless::Application
+    DependsOn: AppSyncGraphQLApi
     Properties:
-      ApiId: !GetAtt [ GraphQLApi, ApiId ]
-      Name: dynamodb
-      Type: AMAZON_DYNAMODB
-      ServiceRoleArn: !GetAtt Role.Arn
-      DynamoDBConfig:
-        TableName: !Ref TablePeople
-        AwsRegion: !Sub ${AWS::Region}
+      Location: resources/appsync/graphqlschema.yaml
 
-  AppSyncResolverPeople:
-    Type: AWS::AppSync::Resolver
+  AppSyncDataSources:
+    Type: AWS::Serverless::Application
+    DependsOn: 
+      - AppSyncGraphQLApi
+      - RoleLambdas
+      - RoleDynamoDb
     Properties:
-      ApiId: !GetAtt [ GraphQLApi, ApiId ]
-      TypeName: Query
-      FieldName: people
-      DataSourceName: !GetAtt [ AppSyncDataSource, Name ]
-      RequestMappingTemplate: '{ "version" : "2017-02-28", "operation": "Invoke", "payload": { "resolve": "query.people", "context": $utils.toJson($context) } }'
-      ResponseMappingTemplate: '$util.toJson($context.result)'
+      Location: resources/appsync/data_sources.yaml
 
-  AppSyncResolverPerson:
-    Type: AWS::AppSync::Resolver
+  AppSyncResolvers:
+    Type: AWS::Serverless::Application
+    DependsOn: 
+      - AppSyncDataSources
+      - AppSyncGraphQLApi
     Properties:
-      ApiId: !GetAtt [ GraphQLApi, ApiId ]
-      TypeName: Query
-      FieldName: getPerson
-      DataSourceName: !GetAtt [ AppSyncDataSource, Name ]
-      RequestMappingTemplate: '{ "version" : "2017-02-28", "operation": "Invoke", "payload": { "resolve": "query.getPerson", "context": $utils.toJson($context) } }'
-      ResponseMappingTemplate: '$util.toJson($context.result)'
-  
-  AppSyncResolverMutationPersonCreate:
-    Type: AWS::AppSync::Resolver
-    DependsOn: GraphQLApiSchema
+      Location: resources/appsync/resolver_person_data.yaml
+
+  AppSyncResolversDynamoDb:
+    Type: AWS::Serverless::Application
+    DependsOn: 
+      - AppSyncDataSources
+      - AppSyncGraphQLApi
     Properties:
-      ApiId: !GetAtt GraphQLApi.ApiId
-      TypeName: Mutation
-      FieldName: personCreate
-      DataSourceName: !GetAtt [ AppSyncDataSource, Name ]
-      RequestMappingTemplate: '{ "version" : "2017-02-28", "operation": "Invoke", "payload": { "resolve": "mutation.personCreate", "context": $utils.toJson($context) } }'
-      ResponseMappingTemplate: $util.toJson($context.result)
+      Location: resources/appsync/resolver_person_dynamodb.yaml
 
-  AppSyncResolverMutationPersonDelete:
-    Type: AWS::AppSync::Resolver
-    DependsOn: GraphQLApiSchema
+  AppSyncApiKey:
+    Type: AWS::Serverless::Application
+    DependsOn: AppSyncGraphQLApi
     Properties:
-      ApiId: !GetAtt GraphQLApi.ApiId
-      TypeName: Mutation
-      FieldName: personDelete
-      DataSourceName: !GetAtt [ AppSyncDataSource, Name ]
-      RequestMappingTemplate: '{ "version" : "2017-02-28", "operation": "Invoke", "payload": { "resolve": "mutation.personDelete", "context": $utils.toJson($context) } }'
-      ResponseMappingTemplate: $util.toJson($context.result)
-
-  AppSyncResolverMutationPersonUpdate:
-    Type: AWS::AppSync::Resolver
-    DependsOn: GraphQLApiSchema
-    Properties:
-      ApiId: !GetAtt GraphQLApi.ApiId
-      TypeName: Mutation
-      FieldName: personUpdate
-      DataSourceName: !GetAtt [ AppSyncDataSource, Name ]
-      RequestMappingTemplate: '{ "version" : "2017-02-28", "operation": "Invoke", "payload": { "resolve": "mutation.personUpdate", "context": $utils.toJson($context) } }'
-      ResponseMappingTemplate: $util.toJson($context.result)
-
-  AppSyncResolverMutationPersonCreateDynamoDb:
-    Type: AWS::AppSync::Resolver
-    DependsOn: GraphQLApiSchema
-    Properties:
-      ApiId: !GetAtt GraphQLApi.ApiId
-      TypeName: Mutation
-      FieldName: personCreateDynamoDb
-      DataSourceName: !GetAtt AppSyncDataSourceDynamoDB.Name
-      RequestMappingTemplate: >
-        {
-          "version": "2017-02-28",
-          "operation": "PutItem",
-          "key": {
-            "id": $util.dynamodb.toDynamoDBJson($util.autoId())
-          },
-          "attributeValues" : $util.dynamodb.toMapValuesJson($context.arguments)
-        }
-      ResponseMappingTemplate: $util.toJson($context.result)
-
-  AppSyncResolverPersonDynamoDb:
-    Type: AWS::AppSync::Resolver
-    DependsOn: GraphQLApiSchema
-    Properties:
-      ApiId: !GetAtt GraphQLApi.ApiId
-      TypeName: Query
-      FieldName: getPersonDynamoDb
-      DataSourceName: !GetAtt AppSyncDataSourceDynamoDB.Name
-      RequestMappingTemplate: >
-        {
-          "version": "2017-02-28",
-          "operation": "GetItem",
-          "key": {
-            "id": { "S": "${context.arguments.id}" }
-          },
-          "consistentRead": true
-        }
-      ResponseMappingTemplate: $util.toJson($context.result)
-
-  # AppSyncResolverPersonByNameDynamoDb:
-  #   Type: AWS::AppSync::Resolver
-  #   DependsOn: GraphQLApiSchema
-  #   Properties:
-  #     ApiId: !GetAtt GraphQLApi.ApiId
-  #     TypeName: Query
-  #     FieldName: getPersonDynamoDb
-  #     DataSourceName: !GetAtt AppSyncDataSourceDynamoDB.Name
-  #     RequestMappingTemplate: >
-  #       {
-  #         "version": "2017-02-28",
-  #         "operation": "GetItem",
-  #         "key": {
-  #           "id": { "S": "${context.arguments.id}" }
-  #         },
-  #         "consistentRead": true
-  #       }
-  #     ResponseMappingTemplate: $util.toJson($context.result)
-
-  AppSyncResolverPeopleDynamoDb:
-    Type: AWS::AppSync::Resolver
-    DependsOn: GraphQLApiSchema
-    Properties:
-      ApiId: !GetAtt GraphQLApi.ApiId
-      TypeName: Query
-      FieldName: peopleDynamodb
-      DataSourceName: !GetAtt AppSyncDataSourceDynamoDB.Name
-      RequestMappingTemplate: >
-        {
-          "version": "2017-02-28",
-          "operation": "Scan"
-        }
-      ResponseMappingTemplate: $util.toJson($context.result.items)
-
-
-  AppSyncAPIKey:
-      Type: AWS::AppSync::ApiKey
-      Properties:
-        ApiId: !GetAtt [ GraphQLApi, ApiId ]
-
-Parameters:
-  APIName:
-    Type: String
-
-Outputs:
-  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
-  # Find out more about other implicit resources you can reference within SAM
-  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
-  HelloWorldAPI:
-    Description: "API Gateway endpoint URL for Prod environment for First Function"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
-  HelloWorldFunction:
-    Description: "First Lambda Function ARN"
-    Value: !GetAtt HelloWorldFunction.Arn
-  HelloWorldFunctionIamRole:
-    Description: "Implicit IAM Role created for Hello World function"
-    Value: !GetAtt HelloWorldFunctionRole.Arn
-
-
-  APIKey:
-    Description: API Key
-    Value: !GetAtt [ AppSyncAPIKey, ApiKey ]
+      Location: resources/appsync/api_key.yaml

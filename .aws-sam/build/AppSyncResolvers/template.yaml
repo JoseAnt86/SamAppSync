@@ -1,0 +1,83 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'samtwo
+
+  Sample SAM Template for samtwo resolver for static data
+
+  '
+Globals:
+  Function:
+    Timeout: 5
+Resources:
+  AppSyncResolverPeople:
+    Type: AWS::AppSync::Resolver
+    Properties:
+      ApiId:
+        Ref: GraphQLApiId
+      TypeName: Query
+      FieldName: people
+      DataSourceName:
+        Ref: AppSyncDataSourceName
+      RequestMappingTemplate: '{ "version" : "2017-02-28", "operation": "Invoke",
+        "payload": { "resolve": "query.people", "context": $utils.toJson($context)
+        } }'
+      ResponseMappingTemplate: $util.toJson($context.result)
+  AppSyncResolverPerson:
+    Type: AWS::AppSync::Resolver
+    Properties:
+      ApiId:
+        Ref: GraphQLApiId
+      TypeName: Query
+      FieldName: getPerson
+      DataSourceName:
+        Ref: AppSyncDataSourceName
+      RequestMappingTemplate: '{ "version" : "2017-02-28", "operation": "Invoke",
+        "payload": { "resolve": "query.getPerson", "context": $utils.toJson($context)
+        } }'
+      ResponseMappingTemplate: $util.toJson($context.result)
+  AppSyncResolverMutationPersonCreate:
+    Type: AWS::AppSync::Resolver
+    Properties:
+      ApiId:
+        Ref: GraphQLApiId
+      TypeName: Mutation
+      FieldName: personCreate
+      DataSourceName:
+        Ref: AppSyncDataSourceName
+      RequestMappingTemplate: '{ "version" : "2017-02-28", "operation": "Invoke",
+        "payload": { "resolve": "mutation.personCreate", "context": $utils.toJson($context)
+        } }'
+      ResponseMappingTemplate: $util.toJson($context.result)
+  AppSyncResolverMutationPersonDelete:
+    Type: AWS::AppSync::Resolver
+    Properties:
+      ApiId:
+        Ref: GraphQLApiId
+      TypeName: Mutation
+      FieldName: personDelete
+      DataSourceName:
+        Ref: AppSyncDataSourceName
+      RequestMappingTemplate: '{ "version" : "2017-02-28", "operation": "Invoke",
+        "payload": { "resolve": "mutation.personDelete", "context": $utils.toJson($context)
+        } }'
+      ResponseMappingTemplate: $util.toJson($context.result)
+  AppSyncResolverMutationPersonUpdate:
+    Type: AWS::AppSync::Resolver
+    Properties:
+      ApiId:
+        Ref: GraphQLApiId
+      TypeName: Mutation
+      FieldName: personUpdate
+      DataSourceName:
+        Ref: AppSyncDataSourceName
+      RequestMappingTemplate: '{ "version" : "2017-02-28", "operation": "Invoke",
+        "payload": { "resolve": "mutation.personUpdate", "context": $utils.toJson($context)
+        } }'
+      ResponseMappingTemplate: $util.toJson($context.result)
+Parameters:
+  GraphQLApiId:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: GraphQLApiIdSSM
+  AppSyncDataSourceName:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: AppSyncDataSourceNameSSM

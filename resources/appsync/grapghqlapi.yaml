@@ -1,0 +1,30 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  samtwo
+  
+  Sample SAM Template for samtwo, graphQLApi
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 5
+
+Resources:
+  GraphQLApi:
+    Type: AWS::AppSync::GraphQLApi
+    Properties:
+      Name: PersonApi
+      AuthenticationType: API_KEY
+
+  GraphQLApiSSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: GraphQLApiIdSSM
+      Value: !GetAtt [GraphQLApi, ApiId]
+
+Outputs:
+  GraphQLUrl:
+    Description: GraphQL URL
+    Value: !GetAtt [ GraphQLApi, GraphQLUrl ]

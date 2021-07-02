@@ -1,0 +1,21 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'samtwo
+
+  Sample SAM Template for samtwo, graphQLSchema
+
+  '
+Globals:
+  Function:
+    Timeout: 5
+Resources:
+  GraphQLApiSchema:
+    Type: AWS::AppSync::GraphQLSchema
+    Properties:
+      ApiId:
+        Ref: GraphQLApiId
+      DefinitionS3Location: ..\..\..\graphql\schemas\schema.graphql
+Parameters:
+  GraphQLApiId:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: GraphQLApiIdSSM

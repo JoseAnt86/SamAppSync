@@ -1,0 +1,60 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'samtwo
+
+  Sample SAM Template for samtwo resolver for dynamodb data
+
+  '
+Globals:
+  Function:
+    Timeout: 5
+Resources:
+  AppSyncResolverMutationPersonCreateDynamoDb:
+    Type: AWS::AppSync::Resolver
+    Properties:
+      ApiId:
+        Ref: GraphQLApiId
+      TypeName: Mutation
+      FieldName: personCreateDynamoDb
+      DataSourceName:
+        Ref: AppSyncDataSourceNameDynamodb
+      RequestMappingTemplate: "{\n  \"version\": \"2017-02-28\",\n  \"operation\"\
+        : \"PutItem\",\n  \"key\": {\n    \"id\": $util.dynamodb.toDynamoDBJson($util.autoId())\n\
+        \  },\n  \"attributeValues\" : $util.dynamodb.toMapValuesJson($context.arguments)\n\
+        }\n"
+      ResponseMappingTemplate: $util.toJson($context.result)
+  AppSyncResolverPersonDynamoDb:
+    Type: AWS::AppSync::Resolver
+    Properties:
+      ApiId:
+        Ref: GraphQLApiId
+      TypeName: Query
+      FieldName: getPersonDynamoDb
+      DataSourceName:
+        Ref: AppSyncDataSourceNameDynamodb
+      RequestMappingTemplate: "{\n  \"version\": \"2017-02-28\",\n  \"operation\"\
+        : \"GetItem\",\n  \"key\": {\n    \"id\": { \"S\": \"${context.arguments.id}\"\
+        \ }\n  },\n  \"consistentRead\": true\n}\n"
+      ResponseMappingTemplate: $util.toJson($context.result)
+  AppSyncResolverPeopleDynamoDb:
+    Type: AWS::AppSync::Resolver
+    Properties:
+      ApiId:
+        Ref: GraphQLApiId
+      TypeName: Query
+      FieldName: peopleDynamodb
+      DataSourceName:
+        Ref: AppSyncDataSourceNameDynamodb
+      RequestMappingTemplate: "{\n  \"version\": \"2017-02-28\",\n  \"operation\"\
+        : \"Scan\"\n}\n"
+      ResponseMappingTemplate: $util.toJson($context.result.items)
+Parameters:
+  GraphQLApiId:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: GraphQLApiIdSSM
+  AppSyncDataSourceName:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: AppSyncDataSourceNameSSM
+  AppSyncDataSourceNameDynamodb:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: AppSyncDataSourceNameDynamodbSSM

@@ -1,0 +1,31 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  samtwo
+  
+  Sample SAM Template for samtwo, lambda to access person
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 5
+
+Resources:
+  PersonFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: ../../graphql/person-get-all/
+      Handler: person-get-all
+      Runtime: go1.x
+
+  PersonFunctionArnSSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: PersonFunctionArnSSM
+      Value: !GetAtt [PersonFunction, Arn]
+
+Outputs:
+  PersonFunctionArn:
+    Description: Person Function Arn
+    Value: !GetAtt [PersonFunction, Arn]

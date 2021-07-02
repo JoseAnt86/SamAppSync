@@ -2,10 +2,10 @@ version = 0.1
 [default]
 [default.deploy]
 [default.deploy.parameters]
-stack_name = "samtwo"
+stack_name = "samappsyncgraphql"
 s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-1qylvsls2vi2l"
-s3_prefix = "samtwo"
+s3_prefix = "samappsyncgraphql"
 region = "us-west-2"
 confirm_changeset = true
-capabilities = "CAPABILITY_IAM"
+capabilities = "CAPABILITY_IAM CAPABILITY_AUTO_EXPAND"
 parameter_overrides = "APIName=\"testapi\""

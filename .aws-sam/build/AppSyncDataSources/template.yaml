@@ -1,0 +1,67 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'samtwo
+
+  Sample SAM Template for samtwo, aws APPSync Datasource.
+
+  '
+Globals:
+  Function:
+    Timeout: 5
+Resources:
+  AppSyncDataSource:
+    Type: AWS::AppSync::DataSource
+    Properties:
+      ApiId:
+        Ref: GraphQLApiId
+      Name: source
+      Type: AWS_LAMBDA
+      LambdaConfig:
+        LambdaFunctionArn:
+          Ref: PersonFunctionArn
+      ServiceRoleArn:
+        Ref: RoleLambdasArn
+  AppSyncDataSourceDynamoDB:
+    Type: AWS::AppSync::DataSource
+    Properties:
+      ApiId:
+        Ref: GraphQLApiId
+      Name: dynamodb
+      Type: AMAZON_DYNAMODB
+      ServiceRoleArn:
+        Ref: RoleDynamoDbArn
+      DynamoDBConfig:
+        TableName: people
+        AwsRegion:
+          Fn::Sub: ${AWS::Region}
+  AppSyncDataSourceNameSSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: AppSyncDataSourceNameSSM
+      Value:
+        Fn::GetAtt:
+        - AppSyncDataSource
+        - Name
+  AppSyncDataSourceNameDynamodbSSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: AppSyncDataSourceNameDynamodbSSM
+      Value:
+        Fn::GetAtt:
+        - AppSyncDataSourceDynamoDB
+        - Name
+Parameters:
+  GraphQLApiId:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: GraphQLApiIdSSM
+  PersonFunctionArn:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: PersonFunctionArnSSM
+  RoleLambdasArn:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: RoleLambdasArnSSM
+  RoleDynamoDbArn:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: RoleDynamoDbArnSSM

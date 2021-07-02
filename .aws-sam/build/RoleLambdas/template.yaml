@@ -1,0 +1,55 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'samtwo
+
+  Sample SAM Template for samtwo roles for lambdas
+
+  '
+Globals:
+  Function:
+    Timeout: 5
+Resources:
+  RoleLambdas:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: appsync.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Policies:
+      - PolicyName: allow-access-to-lambda-person-from-appsync
+        PolicyDocument:
+          Version: 2012-10-17
+          Statement:
+          - Effect: Allow
+            Action: lambda:invokeFunction
+            Resource:
+            - Ref: PersonFunctionArn
+            - Fn::Join:
+              - ''
+              - - Ref: PersonFunctionArn
+                - :*
+  RoleLambdasArnSSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: RoleLambdasArnSSM
+      Value:
+        Fn::GetAtt:
+        - RoleLambdas
+        - Arn
+Parameters:
+  PersonFunctionArn:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: PersonFunctionArnSSM
+Outputs:
+  RoleLambdasArn:
+    Description: RoleLambda Arn
+    Value:
+      Fn::GetAtt:
+      - RoleLambdas
+      - Arn
