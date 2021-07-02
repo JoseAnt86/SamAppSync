@@ -1,22 +1,9 @@
 package main
 
 import (
-	"log"
-
 	"github.com/aws/aws-lambda-go/lambda"
 	resolvers "github.com/sbstjn/appsync-resolvers"
 )
-
-// var (
-// 	// DefaultHTTPGetAddress Default Address
-// 	DefaultHTTPGetAddress = "https://checkip.amazonaws.com"
-
-// 	// ErrNoIP No IP found in response
-// 	ErrNoIP = errors.New("No IP in HTTP response")
-
-// 	// ErrNon200Response non 200 status code in response
-// 	ErrNon200Response = errors.New("Non 200 Response found")
-// )
 
 type personEvent struct {
 	ID string `json:"id"`
@@ -70,11 +57,6 @@ func init() {
 }
 
 func main() {
-	log.Printf("request0")
-	log.Printf("request4: %v", r)
-	handler, found := r["query.people"]
-	log.Printf("request5: %v", handler)
-	log.Printf("request6: %v", found)
 
 	lambda.Start(r.Handle)
 }
